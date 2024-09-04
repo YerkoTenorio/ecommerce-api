@@ -7,5 +7,6 @@ func RegisterRoutes(app *fiber.App) {
 	AuthRoutes(app)
 	ProductRoutes(app)
 	OrderRoutes(app)
+	UserRoutes(app)
 
 }

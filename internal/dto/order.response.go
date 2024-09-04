@@ -11,6 +11,16 @@ type OrderResponse struct {
 
 type OrderItemResponse struct {
 	ProductID uint    `json:"product_id"`
-	Quantity  uint    `json:"quantity"`
+	Quantity  int     `json:"quantity"`
 	UnitPrice float64 `json:"unit_price"`
+}
+
+type OrderUpdateResponse struct {
+	OldOrder OrderDetails `json:"old_order"`
+	NewOrder OrderDetails `json:"new_order"`
+}
+
+type OrderDetails struct {
+	OrderItems  []OrderItemResponse `json:"order_items"`
+	TotalAmount float64             `json:"total_amount"`
 }

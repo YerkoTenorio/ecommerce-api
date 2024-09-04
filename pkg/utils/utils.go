@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"ecommerce-api/internal/dto"
+	"ecommerce-api/internal/models"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -21,4 +24,22 @@ func CheckPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 
+}
+
+// Función auxiliar para crear los detalles de la orden
+func CreateOrderDetails(orderItems []models.OrderItem, totalAmount float64) dto.OrderDetails {
+	details := dto.OrderDetails{
+		OrderItems:  make([]dto.OrderItemResponse, len(orderItems)),
+		TotalAmount: totalAmount,
+	}
+
+	for i, item := range orderItems {
+		details.OrderItems[i] = dto.OrderItemResponse{
+			ProductID: item.ProductID,
+			Quantity:  int(item.Quantity),
+			UnitPrice: item.UnitPrice,
+		}
+	}
+
+	return details
 }

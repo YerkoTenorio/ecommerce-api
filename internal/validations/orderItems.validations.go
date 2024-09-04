@@ -4,6 +4,7 @@ import (
 	"ecommerce-api/internal/models"
 	"ecommerce-api/internal/repositories"
 	"ecommerce-api/pkg/utils"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -46,13 +47,43 @@ func ValidateOrderItem(orderItem models.OrderItem) *fiber.Map {
 
 func CalculateTotalAmount(orderItems []models.OrderItem) (float64, error) {
 	var totalAmount float64
-	for _, item := range orderItems {
-		// asume que el precio unitario se recupera del producto en la base de datos
-		product, err := repositories.GetProductById(item.ProductID)
-		if err != nil {
-			return 0, err
-		}
-		totalAmount += product.Price * float64(item.Quantity)
+
+	// crear un slice para almacenar los Ids de los productos
+
+	productIDs := make([]uint, len(orderItems))
+	for i, item := range orderItems {
+		productIDs[i] = item.ProductID
 	}
+
+	// obtener todos los productos en una sola consulta
+	fmt.Println(productIDs)
+	products, err := repositories.GetProductsByIds(productIDs)
+	if err != nil {
+		return 0, err
+	}
+
+	fmt.Println(products)
+
+	// crear un mapa para almacenar los precios de los productos
+
+	productPrices := make(map[uint]models.Product)
+	for _, product := range products {
+		productPrices[product.ID] = product
+	}
+	//fmt.Println(productPrices)
+
+	// calcular el total de la orden
+
+	for _, item := range orderItems {
+		product, exists := productPrices[item.ProductID]
+		//fmt.Println(productPrices[item.ProductID])
+		if !exists {
+			return 0, fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("El producto con id %d no existe", item.ProductID))
+		}
+		totalAmount += float64(item.Quantity) * product.Price
+
+	}
+
 	return totalAmount, nil
+
 }

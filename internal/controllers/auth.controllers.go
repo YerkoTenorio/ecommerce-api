@@ -45,6 +45,7 @@ func Register(c *fiber.Ctx) error {
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: hashedPassword,
+		Role:     "user", //rol por defecto
 	}
 
 	if err := utils.DB.Create(&user).Error; err != nil {

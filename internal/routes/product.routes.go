@@ -11,7 +11,7 @@ func ProductRoutes(app *fiber.App) {
 
 	//grupo de rutas para productos protegidas por jwt
 
-	productGroup := app.Group("/api/v1/products", middlewares.JWTProtected)
+	productGroup := app.Group("/api/v1/products", middlewares.AuthMiddleware)
 
 	productGroup.Post("/", controllers.CreateProduct)      //crear un producto
 	productGroup.Get("/", controllers.GetProducts)         //obtener todos los productos

@@ -1,6 +1,9 @@
 package middlewares
 
 import (
+	"ecommerce-api/internal/models"
+	"ecommerce-api/pkg/utils"
+	"fmt"
 	"os"
 	"strings"
 
@@ -8,44 +11,53 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-//JWTProtected es un middleware que protege a las rutas que requieren autenticación
+//AuthMiddleware es un middleware que protege a las rutas que requieren autenticación
 
-func JWTProtected(c *fiber.Ctx) error {
-	// extraer el token de la cabecera de autorización
-	authHeader := c.Get("Authorization")
-	if authHeader == "" {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "No se proporcionó un token de autorización",
-		})
-	}
-
-	// comprobar si el encabezado de autorización tiene el formato correcto
-
-	tokenString := strings.TrimSpace(strings.Replace(authHeader, "Bearer", "", 1))
+func AuthMiddleware(c *fiber.Ctx) error {
+	// Extraer el token de la cabecera de autorización
+	tokenString := c.Get("Authorization")
 	if tokenString == "" {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"error": "No se proporcionó un token de autorización",
 		})
 	}
 
-	// verificar y parsear el token
-
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, fiber.NewError(fiber.StatusUnauthorized, "Método de firma no válido")
-		}
-		// retornar la clave secreta
-
+	// Parsear y verificar el token JWT usando RegisteredClaims
+	claims := &jwt.RegisteredClaims{}
+	token, err := jwt.ParseWithClaims(strings.TrimSpace(strings.Replace(tokenString, "Bearer", "", 1)), claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(os.Getenv("JWT_SECRET")), nil
 	})
+
 	if err != nil || !token.Valid {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"error": "Token invalido o expirado",
+			"error": "Token no válido o expirado",
 		})
-
 	}
-	// continuar con la solicitud si el token es válido
+	fmt.Println(claims)
+	// Recuperar el usuario de la base de datos usando el ID del token
+	var user models.User
+	if err := utils.DB.Where("id = ?", claims.Subject).First(&user).Error; err != nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+			"error": "Usuario no encontrado",
+		})
+	}
+
+	// Guardar el usuario en el contexto para que esté disponible en otras partes de la aplicación
+	c.Locals("user", &user)
 
 	return c.Next()
+}
+
+// RoleMiddleware es un middleware que protege a las rutas que requieren un rol específico
+
+func RoleMiddleware(requireRole string) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		user := c.Locals("user").(*models.User)
+		if user.Role != requireRole {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "No tienes permiso para acceder a esta ruta",
+			})
+		}
+		return c.Next()
+	}
 }

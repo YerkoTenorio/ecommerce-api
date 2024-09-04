@@ -19,3 +19,11 @@ func GetProductById(productID uint) (*models.Product, error) {
 	return &product, nil
 
 }
+
+func GetProductsByIds(productIDs []uint) ([]models.Product, error) {
+	var products []models.Product
+	if err := utils.DB.Where("id IN ?", productIDs).Find(&products).Error; err != nil {
+		return nil, err
+	}
+	return products, nil
+}

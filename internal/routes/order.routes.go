@@ -11,7 +11,7 @@ func OrderRoutes(app *fiber.App) {
 
 	//grupo de rutas para ordenes protegidas por jwt
 
-	orderGroup := app.Group("/api/v1/orders", middlewares.JWTProtected)
+	orderGroup := app.Group("/api/v1/orders", middlewares.AuthMiddleware)
 
 	orderGroup.Post("/", controllers.CreateOrder)      //crear una orden
 	orderGroup.Get("/", controllers.GetOrders)         //obtener todas las ordenes
